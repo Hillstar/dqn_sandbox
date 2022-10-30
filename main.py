@@ -1,13 +1,22 @@
 import pygame
+from os import path
+
 import Boundary as BD
 import Car
 
 FPS = 60
 DEBUG_ENABLED = False
+SAVE_FILE = "scene.txt"
+SAVE_CAR_DATA = False
 
-def PRINT_DEBUG(msg):
-    if DEBUG_ENABLED:
-        print(msg)
+def PRINT_DEBUG(arg):
+    if not DEBUG_ENABLED:
+        return
+    if isinstance(arg, str):
+        print(arg)
+    elif isinstance(arg, list): # list of objects
+        for obj in arg:
+            print(obj.rect)
 
 # PYGAME INIT
 pygame.init()
@@ -36,15 +45,42 @@ def delete_obj():
     selected_obj = None
 
 def load_scene():
-    # TODO
     PRINT_DEBUG("LOAD SCENE")
-    return
+    if not path.exists(SAVE_FILE):
+        PRINT_DEBUG("SAVE FILE NOT FOUND")
+        return
+
+    global user_car
+
+    with open(SAVE_FILE) as f:
+        lines = [line.rstrip('\n') for line in f]
+    
+    for line in lines:
+        args = line.split()
+
+        center = (int(args[1]), int(args[2]))
+        size = (int(args[3]), int(args[4]))
+
+        if SAVE_CAR_DATA and args[0] == "car":
+            user_car = Car.car(center, size)
+        elif args[0] == "obj":
+            objects.append(BD.boundary(center, size))
+
+    PRINT_DEBUG(objects)
 
 def save_scene():
-    # TODO
     PRINT_DEBUG("SAVE SCENE")
-    return
+    f = open(SAVE_FILE, "w")
+    if SAVE_CAR_DATA:
+        f.write(f"car {user_car.rect.left} {user_car.rect.top} {user_car.rect.width} {user_car.rect.height}\n")
+    for obj in objects:
+        f.write(f"obj {obj.rect.left} {obj.rect.top} {obj.rect.width} {obj.rect.height}\n")
+    f.close()
 
+    PRINT_DEBUG(objects)
+
+
+load_scene()
 run = True
 while run:
     pygame.time.delay(10)
@@ -82,16 +118,16 @@ while run:
     keys = pygame.key.get_pressed()
 
     if keys[pygame.K_LEFT]:
-        user_car.h_cdt -= int(user_car.move_speed * dt)
+        user_car.rect.centerx -= int(user_car.move_speed * dt)
 
     if keys[pygame.K_RIGHT]:
-        user_car.h_cdt += int(user_car.move_speed * dt)
+        user_car.rect.centerx += int(user_car.move_speed * dt)
 
     if keys[pygame.K_UP]:
-        user_car.v_cdt -= int(user_car.move_speed * dt)
+        user_car.rect.centery -= int(user_car.move_speed * dt)
 
     if keys[pygame.K_DOWN]:
-        user_car.v_cdt += int(user_car.move_speed * dt)
+        user_car.rect.centery += int(user_car.move_speed * dt)
 
     window.fill(0)
 
@@ -103,12 +139,12 @@ while run:
         color = (255, 0, 0) if collide else (255, 255, 255)
         pygame.draw.rect(window, color, obj.rect)
 
-    user_car.rect.center = (user_car.h_cdt, user_car.v_cdt)
-    pygame.draw.rect(window, (0, 255, 0), user_car, 6, 1)
+    pygame.draw.rect(window, (0, 255, 0), user_car.rect, 6, 1)
 
     pygame.display.flip()
     pygame.display.update()
     clock.tick(FPS)
 
+save_scene()
 pygame.quit()
 exit()

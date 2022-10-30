@@ -2,11 +2,8 @@ import pygame
 import uuid
 
 class car:
+    move_speed = 500
 
-    move_speed = 300
-    v_cdt = 100
-    h_cdt= 100
-
-    def __init__(self):
+    def __init__(self, center = (300, 300), size = (50, 50)):
         self.id = uuid.uuid4()
-        self.rect = pygame.Rect(300, 300, 75, 75)
+        self.rect = pygame.Rect(center, size)

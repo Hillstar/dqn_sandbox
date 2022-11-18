@@ -4,7 +4,7 @@ from enum import Enum
 
 # object type
 class Object_type(Enum):
-    CAR = 1
+    PLAYER = 1
     BOUNDARY = 2
     FINISH = 3
 
@@ -39,11 +39,11 @@ class Finish(Boundary):
         color = (0, 0, 255)
         super().__init__(center, size, Object_type.FINISH, color)
 
-class Car(Game_object):
+class Player(Game_object):
     def __init__(self, center = (50, 50), size = (50, 50)):
         self.move_speed = 70
         color = (0, 255, 0)
-        super().__init__(Object_type.CAR, color, center, size)
+        super().__init__(Object_type.PLAYER, color, center, size)
     
     def reset_position(self):
         self.rect.center = (50, 50)

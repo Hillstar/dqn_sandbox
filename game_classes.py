@@ -22,18 +22,29 @@ class Game_object():
         self.rect.width = height
 
 class Boundary(Game_object):
-    def __init__(self, center = (300, 300), size = (150, 20)):
-        color = (255, 255, 255)
-        super().__init__(Object_type.BOUNDARY, color, center, size)
+    def __init__(self, center = (300, 300), size = (100, 20), obj_type = Object_type.BOUNDARY, color = ((255, 255, 255))):
+        self.hit = False
+        self.default_color = color
+        self.hit_color = (255, 0, 0)
+        super().__init__(obj_type, color, center, size)
     
-class Car(Game_object):
-    move_speed = 500
+    def get_color(self):
+        if self.hit:
+            return self.hit_color  
+        else:
+            return self.default_color
 
-    def __init__(self, center = (300, 300), size = (50, 50)):
+class Finish(Boundary):
+    def __init__(self, center = (300, 300), size = (100, 100)):
+        color = (0, 0, 255)
+        super().__init__(center, size, Object_type.FINISH, color)
+
+class Car(Game_object):
+    def __init__(self, center = (50, 50), size = (50, 50)):
+        self.move_speed = 70
         color = (0, 255, 0)
         super().__init__(Object_type.CAR, color, center, size)
-
-class Finish(Game_object):
-    def __init__(self, center = (300, 300), size = (150, 20)):
-        color = (0, 0, 255)
-        super().__init__(Object_type.FINISH, color, center, size)
+    
+    def reset_position(self):
+        self.rect.center = (50, 50)
+        self.color = (33, 255, 33)

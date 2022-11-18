@@ -1,4 +1,7 @@
 import pygame
+
+from asyncio.windows_events import INFINITE
+from pygame import Vector2 as v2
 from os import path
 
 import game_classes as GC
@@ -20,15 +23,34 @@ def PRINT_DEBUG(arg):
 
 # PYGAME INIT
 pygame.init()
-window = pygame.display.set_mode((1200, 800))
+window = pygame.display.set_mode((380, 380))
 clock = pygame.time.Clock()
 
 # OBJECTS INIT
 user_car = GC.Car()
 objects = []
+
+# SCENE ENV INIT
+run = True
+game_over = False
 selected_obj = None
+boundary_hit = False
+finish_hit = False
+distance_to_finish = 0
+distance_to_nearst_bnd = INFINITE
 
+def move_user(action):
+    if action is 0:
+        user_car.rect.centerx -= int(user_car.move_speed * dt)
 
+    if action is 1:
+        user_car.rect.centerx += int(user_car.move_speed * dt)
+
+    if action is 2:
+        user_car.rect.centery -= int(user_car.move_speed * dt)
+
+    if action is 3:
+        user_car.rect.centery += int(user_car.move_speed * dt)
 
 def add_obj(type):
     global objects
@@ -87,14 +109,55 @@ def save_scene():
 
     PRINT_DEBUG(objects)
 
+def get_collisions():
+    global boundary_hit, finish_hit, game_over
+    for obj in objects:
+        collide = obj.rect.colliderect(user_car)
+        if collide: 
+            boundary_hit = True
+            obj.hit = True
+        else:
+            obj.hit = False
+
+        if collide and obj.type == Object_type.FINISH:
+            finish_hit = True
+        #     game_over = True
+
+    PRINT_DEBUG(f"F {distance_to_finish}")
+    PRINT_DEBUG(f"NB = {distance_to_nearst_bnd}")
+
+def calc_distances():
+    dists = []
+    for obj in objects:
+
+        if obj.type == Object_type.FINISH:
+            distance_to_finish = pygame.math.Vector2.distance_to(v2(obj.rect.center), v2(user_car.rect.center))
+        else:
+            dists.append(pygame.math.Vector2.distance_to(v2(obj.rect.center), v2(user_car.rect.center)))
+            distance_to_nearst_bnd = min(dists)
+
+    print(f"F {distance_to_finish}\n")
+    print(f"NB = {distance_to_nearst_bnd}")
+
+def render_scene():
+    window.fill(0)
+
+    for obj in objects:
+        color = obj.get_color()
+        pygame.draw.rect(window, color, obj.rect)
+    
+    pygame.draw.rect(window, user_car.color, user_car.rect, 8, 1)
+
+    pygame.display.flip()
+    pygame.display.update()
+    clock.tick(FPS)
+
 
 load_scene()
-run = True
-game_over = False
 
 while run and not game_over:
-    pygame.time.delay(10)
-    dt = clock.tick(FPS)/1000
+    #pygame.time.delay(10)
+    dt = 0.03 #clock.tick(FPS)/1000
     #PRINT_DEBUG(clock.get_fps())
 
     for event in pygame.event.get():
@@ -117,6 +180,9 @@ while run and not game_over:
             if event.key == pygame.K_r:
                 if selected_obj != None:
                     selected_obj.rotate()
+            
+            if event.key == pygame.K_t:
+                user_car.reset_position()
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1: # left mouse button
@@ -143,25 +209,14 @@ while run and not game_over:
     if keys[pygame.K_DOWN]:
         user_car.rect.centery += int(user_car.move_speed * dt)
 
-    window.fill(0)
-
     if selected_obj:
         selected_obj.rect.center = pygame.mouse.get_pos()
 
-    for obj in objects:
-        collide = obj.rect.colliderect(user_car)
-        color = (255, 0, 0) if collide else obj.color
-        pygame.draw.rect(window, color, obj.rect)
+    get_collisions()
+    render_scene()
+    calc_distances()
 
-        if collide and obj.type == Object_type.FINISH:
-            game_over = True
-
-
-    pygame.draw.rect(window, user_car.color, user_car.rect, 8, 1)
-
-    pygame.display.flip()
-    pygame.display.update()
-    clock.tick(FPS)
+    pixels_arr = pygame.surfarray.pixels3d(window)
 
 if game_over:
     PRINT_DEBUG("YOU WON!!!")

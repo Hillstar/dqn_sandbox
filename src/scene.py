@@ -81,11 +81,11 @@ class Scene():
             size = (args[3], args[4])
 
             if args[0] == Object_type.PLAYER.value and SAVE_CAR_DATA:
-                self.player = Player(center, size)
+                self.player = Player(center = center, size = size)
             elif args[0] == Object_type.BOUNDARY.value:
-                self.scene_objects.append(Boundary(center, size))
+                self.scene_objects.append(Boundary(center = center, size = size))
             elif args[0] == Object_type.FINISH.value:
-                self.scene_objects.append(Finish(center, size))
+                self.scene_objects.append(Finish(center = center, size = size))
 
         PRINT_DEBUG(self.scene_objects)
 
@@ -99,6 +99,16 @@ class Scene():
         f.close()
 
         PRINT_DEBUG(self.scene_objects)
+
+    def restart_scene(self):
+        # SCENE ENV REINIT
+        self.boundary_hit = False
+        self.finish_hit = False
+        self.distance_to_finish = 0
+        self.distance_to_nearst_bnd = INFINITE
+        self.step_rew = 0
+        if self.user_car:
+            self.user_car.reset_position()
 
     def get_collisions(self):
         for obj in self.scene_objects:
@@ -139,6 +149,12 @@ class Scene():
 
         pygame.display.flip()
         self.clock.tick(FPS)
+
+    def get_screen_pixels(self):
+        return pygame.surfarray.pixels3d(self.window)
+    
+    def get_screen_size(self):
+        return self.window.get_size()
 
     def move_player(self, action):
         dt = 0.03 #clock.tick(FPS)/1000
@@ -193,6 +209,9 @@ class Scene():
                 
                 if event.key == pygame.K_t:
                     self.player.reset_position()
+
+                if event.key == pygame.K_f:
+                    self.render_scene()
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1: # left mouse button

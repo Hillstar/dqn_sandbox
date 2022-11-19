@@ -12,6 +12,7 @@ SCREEN_HEIGHT = 380
 DEBUG_ENABLED = False
 SAVE_FILE = "scene.txt"
 SAVE_CAR_DATA = False
+MOVE_RESTRICTIONS = True
 
 def PRINT_DEBUG(arg):
     if not DEBUG_ENABLED:
@@ -23,10 +24,10 @@ def PRINT_DEBUG(arg):
             print(obj.rect)
 
 class Move_type(Enum):
-    UP = 1
-    DOWN = 2
-    LEFT = 3
-    RIGHT = 4
+    UP = 0
+    DOWN = 1
+    LEFT = 2
+    RIGHT = 3
 
 class Scene():
     def __init__(self):
@@ -107,8 +108,8 @@ class Scene():
         self.distance_to_finish = 0
         self.distance_to_nearst_bnd = INFINITE
         self.step_rew = 0
-        if self.user_car:
-            self.user_car.reset_position()
+        if self.player:
+            self.player.reset_position()
 
     def get_collisions(self):
         for obj in self.scene_objects:
@@ -156,19 +157,37 @@ class Scene():
     def get_screen_size(self):
         return self.window.get_size()
 
-    def move_player(self, action):
+    def _perform_move_restrictions(self, action, dt):
+        move_step = self.player.move_speed * dt
+        if action is Move_type.LEFT and self.player.rect.left < 0:
+            self.player.rect.centerx += int(move_step)
+
+        if action is Move_type.RIGHT and self.player.rect.right > self.window.get_width():
+            self.player.rect.centerx -= int(move_step)
+
+        if action is Move_type.UP and self.player.rect.top < 0:
+            self.player.rect.centery += int(move_step)
+
+        if action is Move_type.DOWN and  self.player.rect.bottom > self.window.get_height():
+            self.player.rect.centery -= int(move_step)
+
+    def _move_player(self, action):
         dt = 0.03 #clock.tick(FPS)/1000
+        move_step = self.player.move_speed * dt
         if action is Move_type.LEFT:
-            self.player.rect.centerx -= int(self.player.move_speed * dt)
+            self.player.rect.centerx -= int(move_step)
 
         if action is Move_type.RIGHT:
-            self.player.rect.centerx += int(self.player.move_speed * dt)
+            self.player.rect.centerx += int(move_step)
 
         if action is Move_type.UP:
-            self.player.rect.centery -= int(self.player.move_speed * dt)
+            self.player.rect.centery -= int(move_step)
 
         if action is Move_type.DOWN:
-            self.player.rect.centery += int(self.player.move_speed * dt)
+            self.player.rect.centery += int(move_step)
+
+        if MOVE_RESTRICTIONS:
+            self.perform_move_restrictions(action, dt)
 
     def handle_player_movement_keys(self):
         keys = pygame.key.get_pressed()
@@ -210,8 +229,8 @@ class Scene():
                 if event.key == pygame.K_t:
                     self.player.reset_position()
 
-                if event.key == pygame.K_f:
-                    self.render_scene()
+                if event.key == pygame.K_y:
+                    self.restart_scene()
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1: # left mouse button

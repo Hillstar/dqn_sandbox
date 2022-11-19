@@ -13,7 +13,9 @@ class Game_object():
         self.id = uuid.uuid4()
         self.type = obj_type
         self.color = color
-        self.rect = pygame.Rect(center, size)
+        left = center[0] - size[0] / 2
+        top = center[1] - size[1] / 2
+        self.rect = pygame.Rect((left, top), size)
 
     def rotate(self):
         # Just swap values to rotate to 90 degrees
@@ -40,11 +42,11 @@ class Finish(Boundary):
         super().__init__(Object_type.FINISH, center, color, size)
 
 class Player(Game_object):
-    def __init__(self, center = (50, 50), size = (50, 50)):
+    def __init__(self, center = (75, 75), size = (50, 50)):
         self.move_speed = 70
         color = (0, 255, 0)
         super().__init__(Object_type.PLAYER, center, color, size)
 
     def reset_position(self):
-        self.rect.center = (50, 50)
+        self.rect.center = (75, 75)
         self.color = (33, 255, 33)

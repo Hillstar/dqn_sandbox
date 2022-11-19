@@ -43,7 +43,7 @@ class Scene():
         # SCENE ENV INIT
         self.run_scene = True
         self.selected_obj = None
-        # self.boundary_hit = False
+        self.boundary_hit = False
         # self.finish_hit = False
         # self.dist_to_finish = 0
         # self.dist_to_nearst_bnd = INFINITE
@@ -112,7 +112,7 @@ class Scene():
 
     def restart_scene(self):
         # SCENE ENV REINIT
-        # self.boundary_hit = False
+        self.boundary_hit = False
         # self.finish_hit = False
         # self.distance_to_finish = 0
         # self.distance_to_nearst_bnd = INFINITE
@@ -125,8 +125,13 @@ class Scene():
         for obj in self.scene_objects:
             collide = obj.rect.colliderect(self.player)
             if collide: 
-                #self.boundary_hit = True
-                obj.hit = True
+                if obj.type == Object_type.CHECK_POINT.value and obj.hit == False:
+                    obj.hit = True
+                    return True
+                elif obj.type == Object_type.SCENE_OBJECT.value:
+                    self.boundary_hit = True
+        
+        return False
             # else:
             #     obj.hit = False
 
@@ -168,7 +173,7 @@ class Scene():
         if action is Move_type.DOWN and  self.player.rect.bottom > self.window.get_height():
             self.player.rect.centery -= int(move_step)
 
-    def _move_player(self, action):
+    def move_player(self, action):
         dt = 0.03 #clock.tick(FPS)/1000
         move_step = self.player.move_speed * dt
         if action is Move_type.LEFT:
@@ -190,16 +195,16 @@ class Scene():
         keys = pygame.key.get_pressed()
 
         if keys[pygame.K_LEFT]:
-            self._move_player(Move_type.LEFT)
+            self.move_player(Move_type.LEFT)
 
         if keys[pygame.K_RIGHT]:
-            self._move_player(Move_type.RIGHT)
+            self.move_player(Move_type.RIGHT)
 
         if keys[pygame.K_UP]:
-            self._move_player(Move_type.UP)
+            self.move_player(Move_type.UP)
 
         if keys[pygame.K_DOWN]:
-            self._move_player(Move_type.DOWN)
+            self.move_player(Move_type.DOWN)
 
     def handle_management_keys(self):
         for event in pygame.event.get():

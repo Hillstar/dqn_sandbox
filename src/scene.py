@@ -4,7 +4,7 @@ from asyncio.windows_events import INFINITE
 from pygame import Vector2 as v2
 from os import path
 from enum import Enum
-from objects import Object_type, Player, Boundary, Finish
+from objects import Object_type, Player, Scene_object
 
 FPS = 60
 SCREEN_WIDTH = 380
@@ -43,21 +43,25 @@ class Scene():
         # SCENE ENV INIT
         self.run_scene = True
         self.selected_obj = None
-        self.boundary_hit = False
-        self.finish_hit = False
-        self.dist_to_finish = 0
-        self.dist_to_nearst_bnd = INFINITE
+        # self.boundary_hit = False
+        # self.finish_hit = False
+        # self.dist_to_finish = 0
+        # self.dist_to_nearst_bnd = INFINITE
 
     def __del__(self):
         pygame.quit()
 
-    def add_obj(self, type, center = (300, 300)):
-        if type == Object_type.BOUNDARY: # rework here to single line and dynamic arg puting
+    def add_obj(self, obj_type, center = (300, 300)):
+        if obj_type == Object_type.SCENE_OBJECT: # rework here to single line and dynamic arg puting
+            color = (100, 255, 255)
+            hit_color = (255, 50, 50)
             PRINT_DEBUG("ADD BOUNDARY")
-            self.scene_objects.append(Boundary(center = center))
-        elif type == Object_type.FINISH:
+        else: # CHECK_POINT
+            color = (50, 35, 200)
+            hit_color = (220, 220, 220)
             PRINT_DEBUG("ADD FINISH")
-            self.scene_objects.append(Finish(center = center))
+
+        self.scene_objects.append(Scene_object(obj_type = obj_type.value, center = center, color = color, hit_color = hit_color))
         self.selected_obj = self.scene_objects[-1]
 
     def delete_obj(self):
@@ -77,16 +81,20 @@ class Scene():
         for line in lines:
             args = line.split()
             args = [ int(arg) for arg in args ]
-
+            
+            obj_type = args[0]
             center = (args[1], args[2])
             size = (args[3], args[4])
+            color = (args[5], args[6], args[7])
+            hit_color = (args[8], args[9], args[10])
 
-            if args[0] == Object_type.PLAYER.value and SAVE_CAR_DATA:
+            if obj_type == Object_type.PLAYER.value and SAVE_CAR_DATA:
                 self.player = Player(center = center, size = size)
-            elif args[0] == Object_type.BOUNDARY.value:
-                self.scene_objects.append(Boundary(center = center, size = size))
-            elif args[0] == Object_type.FINISH.value:
-                self.scene_objects.append(Finish(center = center, size = size))
+            elif obj_type == Object_type.SCENE_OBJECT.value or obj_type == Object_type.CHECK_POINT.value:
+                self.scene_objects.append(Scene_object(obj_type = obj_type, center = center, size = size, color = color, hit_color = hit_color))
+
+        if not SAVE_CAR_DATA:
+            self.player.reset_position()
 
         PRINT_DEBUG(self.scene_objects)
 
@@ -96,48 +104,37 @@ class Scene():
         if SAVE_CAR_DATA:
             f.write(f"{Object_type.PLAYER} {self.player.rect.left} {self.player.rect.top} {self.player.rect.width} {self.player.rect.height}\n")
         for obj in self.scene_objects:
-            f.write(f"{obj.type.value} {obj.rect.left} {obj.rect.top} {obj.rect.width} {obj.rect.height}\n")
+            f.write(f"{obj.type} {obj.rect.centerx} {obj.rect.centery} {obj.rect.width} {obj.rect.height} " \
+                f"{obj.color[0]} {obj.color[1]} {obj.color[2]} {obj.hit_color[0]} {obj.hit_color[1]} {obj.hit_color[2]}\n")
         f.close()
 
         PRINT_DEBUG(self.scene_objects)
 
     def restart_scene(self):
         # SCENE ENV REINIT
-        self.boundary_hit = False
-        self.finish_hit = False
-        self.distance_to_finish = 0
-        self.distance_to_nearst_bnd = INFINITE
-        self.step_rew = 0
-        if self.player:
-            self.player.reset_position()
+        # self.boundary_hit = False
+        # self.finish_hit = False
+        # self.distance_to_finish = 0
+        # self.distance_to_nearst_bnd = INFINITE
+        self.run_scene = True
+        self.selected_obj = None
+        self.scene_objects = []
+        self.load_scene()
 
     def get_collisions(self):
         for obj in self.scene_objects:
             collide = obj.rect.colliderect(self.player)
             if collide: 
-                self.boundary_hit = True
+                #self.boundary_hit = True
                 obj.hit = True
-            else:
-                obj.hit = False
+            # else:
+            #     obj.hit = False
 
-            if collide and obj.type == Object_type.FINISH:
-                self.finish_hit = True
+            #if collide and obj.type == Object_type.CHECK_POINT:
+                #self.finish_hit = True
 
-        PRINT_DEBUG(f"F {self.dist_to_finish}")
-        PRINT_DEBUG(f"NB = {self.dist_to_nearst_bnd}")
-
-    def calc_distances(self):
-        dists = []
-        for obj in self.scene_objects:
-
-            if obj.type == Object_type.FINISH:
-                self.dist_to_finish = pygame.math.Vector2.distance_to(v2(obj.rect.center), v2(self.player.rect.center))
-            else:
-                dists.append(pygame.math.Vector2.distance_to(v2(obj.rect.center), v2(self.player.rect.center)))
-                self.dist_to_nearst_bnd = min(dists)
-
-        PRINT_DEBUG(f"F {self.dist_to_finish}\n")
-        PRINT_DEBUG(f"NB = {self.dist_to_nearst_bnd}")
+        #PRINT_DEBUG(f"F {self.dist_to_finish}")
+        #PRINT_DEBUG(f"NB = {self.dist_to_nearst_bnd}")
 
     def render_scene(self):
         self.window.fill(0)
@@ -187,22 +184,22 @@ class Scene():
             self.player.rect.centery += int(move_step)
 
         if MOVE_RESTRICTIONS:
-            self.perform_move_restrictions(action, dt)
+            self._perform_move_restrictions(action, dt)
 
     def handle_player_movement_keys(self):
         keys = pygame.key.get_pressed()
 
         if keys[pygame.K_LEFT]:
-            self.move_player(Move_type.LEFT)
+            self._move_player(Move_type.LEFT)
 
         if keys[pygame.K_RIGHT]:
-            self.move_player(Move_type.RIGHT)
+            self._move_player(Move_type.RIGHT)
 
         if keys[pygame.K_UP]:
-            self.move_player(Move_type.UP)
+            self._move_player(Move_type.UP)
 
         if keys[pygame.K_DOWN]:
-            self.move_player(Move_type.DOWN)
+            self._move_player(Move_type.DOWN)
 
     def handle_management_keys(self):
         for event in pygame.event.get():
@@ -210,26 +207,23 @@ class Scene():
                 self.run_scene = False
 
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_e:
+                if event.key == pygame.K_1:
                     if not self.selected_obj:
-                        self.add_obj(Object_type.BOUNDARY)
+                        self.add_obj(Object_type.SCENE_OBJECT)
 
-                if event.key == pygame.K_f:
+                if event.key == pygame.K_2:
                     if not self.selected_obj:
-                        self.add_obj(Object_type.FINISH)
+                        self.add_obj(Object_type.CHECK_POINT)
             
-                if event.key == pygame.K_q:
+                if event.key == pygame.K_d:
                     if self.selected_obj != None:
                         self.delete_obj()
                 
                 if event.key == pygame.K_r:
                     if self.selected_obj != None:
                         self.selected_obj.rotate()
-                
-                if event.key == pygame.K_t:
-                    self.player.reset_position()
 
-                if event.key == pygame.K_y:
+                if event.key == pygame.K_f:
                     self.restart_scene()
 
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -244,3 +238,16 @@ class Scene():
                                 break
         if self.selected_obj:
             self.selected_obj.rect.center = pygame.mouse.get_pos()
+
+    # def calc_distances(self):
+    #     dists = []
+    #     for obj in self.scene_objects:
+
+    #         if obj.type == Object_type.FINISH:
+    #             self.dist_to_finish = pygame.math.Vector2.distance_to(v2(obj.rect.center), v2(self.player.rect.center))
+    #         else:
+    #             dists.append(pygame.math.Vector2.distance_to(v2(obj.rect.center), v2(self.player.rect.center)))
+    #             self.dist_to_nearst_bnd = min(dists)
+
+    #     PRINT_DEBUG(f"F {self.dist_to_finish}\n")
+    #     PRINT_DEBUG(f"NB = {self.dist_to_nearst_bnd}")

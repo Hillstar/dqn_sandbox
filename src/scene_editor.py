@@ -6,7 +6,6 @@ scene.load_scene()
 while scene.run_scene:
     scene.get_collisions()
     scene.render_scene()
-    scene.calc_distances()
     scene.handle_player_movement_keys()
     scene.handle_management_keys()
 
